@@ -57,11 +57,17 @@ public class SharedPoolDataSource extends InstanceKeyDataSource {
     private transient KeyedObjectPool<UserPassKey, PooledConnectionAndInfo> pool;
     private transient KeyedCPDSConnectionFactory factory;
 
+    private transient ThreadLocal<Boolean> noWait = ThreadLocal.withInitial(() -> false);
+
     /**
      * Default no-argument constructor for Serialization
      */
     public SharedPoolDataSource() {
         // empty.
+    }
+
+    public void setLocalNoWait(boolean v) {
+        noWait.set(v);
     }
 
     /**
@@ -125,7 +131,11 @@ public class SharedPoolDataSource extends InstanceKeyDataSource {
         }
 
         try {
-            return pool.borrowObject(new UserPassKey(userName, userPassword));
+            UserPassKey upk = new UserPassKey(userName, userPassword);
+            if (noWait.get()) {
+                return ((GenericKeyedObjectPool<UserPassKey, PooledConnectionAndInfo>)pool).borrowObject(upk, 0);
+            }
+            return pool.borrowObject(upk);
         } catch (final Exception e) {
             throw new SQLException("Could not retrieve connection info from pool", e);
         }
