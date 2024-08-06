@@ -258,6 +258,12 @@ public abstract class InstanceKeyDataSource implements DataSource, Referenceable
             }
         }
 
+        return getConnectionFromInfo(info, userName);
+
+    }
+
+    protected Connection getConnectionFromInfo(PooledConnectionAndInfo info, String userName) throws SQLException {
+
         final Connection connection = info.getPooledConnection().getConnection();
         try {
             setupDefaults(connection, userName);
@@ -267,6 +273,7 @@ public abstract class InstanceKeyDataSource implements DataSource, Referenceable
             Utils.close(connection, e -> getLogWriter().println("ignoring exception during close: " + e));
             throw ex;
         }
+
     }
 
     protected abstract PooledConnectionManager getConnectionManager(UserPassKey upkey);

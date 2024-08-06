@@ -18,6 +18,7 @@ package org.apache.commons.dbcp2.datasources;
 
 import javax.naming.RefAddr;
 import javax.naming.Reference;
+import java.io.IOException;
 
 /**
  * A JNDI ObjectFactory which creates {@code SharedPoolDataSource}s
@@ -28,13 +29,20 @@ public class SharedPoolDataSourceFactory extends InstanceKeyDataSourceFactory {
     private static final String SHARED_POOL_CLASSNAME = SharedPoolDataSource.class.getName();
 
     @Override
-    protected InstanceKeyDataSource getNewInstance(final Reference ref) {
-        final SharedPoolDataSource spds = new SharedPoolDataSource();
+    protected SharedPoolDataSource getNewInstance(final Reference ref) {
+        return new SharedPoolDataSource();
+    }
+
+    @Override
+    protected void setCommonProperties(Reference ref, InstanceKeyDataSource ikds) throws IOException, ClassNotFoundException {
+
+        super.setCommonProperties(ref, ikds);
+
         final RefAddr ra = ref.get("maxTotal");
         if (ra != null && ra.getContent() != null) {
-            spds.setMaxTotal(Integer.parseInt(ra.getContent().toString()));
+            ((SharedPoolDataSource)ikds).setMaxTotal(Integer.parseInt(ra.getContent().toString()));
         }
-        return spds;
+
     }
 
     @Override

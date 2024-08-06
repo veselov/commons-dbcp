@@ -54,20 +54,14 @@ public class SharedPoolDataSource extends InstanceKeyDataSource {
     // Pool properties
     private int maxTotal = GenericKeyedObjectPoolConfig.DEFAULT_MAX_TOTAL;
 
-    private transient KeyedObjectPool<UserPassKey, PooledConnectionAndInfo> pool;
+    protected transient KeyedObjectPool<UserPassKey, PooledConnectionAndInfo> pool;
     private transient KeyedCPDSConnectionFactory factory;
-
-    private transient ThreadLocal<Boolean> noWait = ThreadLocal.withInitial(() -> false);
 
     /**
      * Default no-argument constructor for Serialization
      */
     public SharedPoolDataSource() {
         // empty.
-    }
-
-    public void setLocalNoWait(boolean v) {
-        noWait.set(v);
     }
 
     /**
@@ -132,13 +126,16 @@ public class SharedPoolDataSource extends InstanceKeyDataSource {
 
         try {
             UserPassKey upk = new UserPassKey(userName, userPassword);
-            if (noWait.get()) {
-                return ((GenericKeyedObjectPool<UserPassKey, PooledConnectionAndInfo>)pool).borrowObject(upk, 0);
-            }
-            return pool.borrowObject(upk);
+            return borrow(upk);
         } catch (final Exception e) {
             throw new SQLException("Could not retrieve connection info from pool", e);
         }
+    }
+
+    protected PooledConnectionAndInfo borrow(UserPassKey upk) throws Exception {
+
+        return pool.borrowObject(upk);
+
     }
 
     /**
@@ -146,9 +143,13 @@ public class SharedPoolDataSource extends InstanceKeyDataSource {
      */
     @Override
     public Reference getReference() throws NamingException {
-        final Reference ref = new Reference(getClass().getName(), SharedPoolDataSourceFactory.class.getName(), null);
+        final Reference ref = new Reference(getClass().getName(), getFactoryClassName(), null);
         ref.add(new StringRefAddr("instanceKey", getInstanceKey()));
         return ref;
+    }
+
+    protected String getFactoryClassName() {
+        return SharedPoolDataSourceFactory.class.getName();
     }
 
     /**
@@ -171,13 +172,22 @@ public class SharedPoolDataSource extends InstanceKeyDataSource {
         }
     }
 
+    protected KeyedCPDSConnectionFactory newFactory(ConnectionPoolDataSource cpds) {
+
+        return new KeyedCPDSConnectionFactory(cpds);
+
+    }
+
     private void registerPool(final String userName, final String password) throws NamingException, SQLException {
 
         final ConnectionPoolDataSource cpds = testCPDS(userName, password);
 
         // Create an object pool to contain our PooledConnections
-        factory = new KeyedCPDSConnectionFactory(cpds, getValidationQuery(), getValidationQueryTimeoutDuration(), isRollbackAfterValidation());
+        factory = newFactory(cpds);
         factory.setMaxConn(getMaxConnDuration());
+        factory.setValidationQuery(getValidationQuery());
+        factory.setValidationQueryTimeoutDuration(getValidationQueryTimeoutDuration());
+        factory.setRollbackAfterValidation(isRollbackAfterValidation());
 
         final GenericKeyedObjectPoolConfig<PooledConnectionAndInfo> config = new GenericKeyedObjectPoolConfig<>();
         config.setBlockWhenExhausted(getDefaultBlockWhenExhausted());

@@ -24,7 +24,7 @@ import javax.sql.PooledConnection;
  *
  * @since 2.0
  */
-final class PooledConnectionAndInfo {
+public final class PooledConnectionAndInfo {
 
     private final PooledConnection pooledConnection;
 
@@ -58,7 +58,7 @@ final class PooledConnectionAndInfo {
      *
      * @return the pooled connection.
      */
-    PooledConnection getPooledConnection() {
+    public PooledConnection getPooledConnection() {
         return pooledConnection;
     }
 

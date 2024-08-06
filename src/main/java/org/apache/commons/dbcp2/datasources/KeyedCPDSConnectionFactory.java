@@ -50,9 +50,9 @@ final class KeyedCPDSConnectionFactory implements KeyedPooledObjectFactory<UserP
             + "I have no record of the underlying PooledConnection.";
 
     private final ConnectionPoolDataSource cpds;
-    private final String validationQuery;
-    private final Duration validationQueryTimeoutDuration;
-    private final boolean rollbackAfterValidation;
+    private String validationQuery;
+    private Duration validationQueryTimeoutDuration = Duration.ZERO;
+    private boolean rollbackAfterValidation;
     private KeyedObjectPool<UserPassKey, PooledConnectionAndInfo> pool;
     private Duration maxConnLifetime = Duration.ofMillis(-1);
 
@@ -69,45 +69,11 @@ final class KeyedCPDSConnectionFactory implements KeyedPooledObjectFactory<UserP
     /**
      * Creates a new {@code KeyedPoolableConnectionFactory}.
      *
-     * @param cpds
-     *            the ConnectionPoolDataSource from which to obtain PooledConnections
-     * @param validationQuery
-     *            a query to use to {@link #validateObject validate} {@link Connection}s. Should return at least one
-     *            row. May be {@code null} in which case3 {@link Connection#isValid(int)} will be used to validate
-     *            connections.
-     * @param validationQueryTimeoutSeconds
-     *            The Duration to allow for the validation query to complete
-     * @param rollbackAfterValidation
-     *            whether a rollback should be issued after {@link #validateObject validating} {@link Connection}s.
+     * @param cpds the ConnectionPoolDataSource from which to obtain PooledConnections
      * @since 2.10.0
      */
-    public KeyedCPDSConnectionFactory(final ConnectionPoolDataSource cpds, final String validationQuery,
-            final Duration validationQueryTimeoutSeconds, final boolean rollbackAfterValidation) {
+    public KeyedCPDSConnectionFactory(final ConnectionPoolDataSource cpds) {
         this.cpds = cpds;
-        this.validationQuery = validationQuery;
-        this.validationQueryTimeoutDuration = validationQueryTimeoutSeconds;
-        this.rollbackAfterValidation = rollbackAfterValidation;
-    }
-
-    /**
-     * Creates a new {@code KeyedPoolableConnectionFactory}.
-     *
-     * @param cpds
-     *            the ConnectionPoolDataSource from which to obtain PooledConnections
-     * @param validationQuery
-     *            a query to use to {@link #validateObject validate} {@link Connection}s. Should return at least one
-     *            row. May be {@code null} in which case3 {@link Connection#isValid(int)} will be used to validate
-     *            connections.
-     * @param validationQueryTimeoutSeconds
-     *            The time, in seconds, to allow for the validation query to complete
-     * @param rollbackAfterValidation
-     *            whether a rollback should be issued after {@link #validateObject validating} {@link Connection}s.
-     * @deprecated Use {@link #KeyedCPDSConnectionFactory(ConnectionPoolDataSource, String, Duration, boolean)}.
-     */
-    @Deprecated
-    public KeyedCPDSConnectionFactory(final ConnectionPoolDataSource cpds, final String validationQuery,
-            final int validationQueryTimeoutSeconds, final boolean rollbackAfterValidation) {
-        this(cpds, validationQuery, Duration.ofSeconds(validationQueryTimeoutSeconds), rollbackAfterValidation);
     }
 
     @Override
@@ -285,6 +251,36 @@ final class KeyedCPDSConnectionFactory implements KeyedPooledObjectFactory<UserP
     @Deprecated
     public void setMaxConnLifetime(final Duration maxConnLifetimeMillis) {
         this.maxConnLifetime = maxConnLifetimeMillis;
+    }
+
+    /**
+     * Sets validation query.
+     *
+     * @param validationQuery
+     *            a query to use to {@link #validateObject validate} {@link Connection}s. Should return at least one
+     *            row. May be {@code null} in which case3 {@link Connection#isValid(int)} will be used to validate
+     *            connections.
+     */
+    public void setValidationQuery(String validationQuery) {
+        this.validationQuery = validationQuery;
+    }
+
+    /**
+     * Sets validation query timeout.
+     * @param in The Duration to allow for the validation query to complete
+     */
+    public void setValidationQueryTimeoutDuration(Duration in) {
+        if (in == null) { in = Duration.ZERO; }
+        this.validationQueryTimeoutDuration = in;
+    }
+
+    /**
+     * Sets rollback after validation behavior.
+     * @param rollbackAfterValidation {@code true} to rollback on validation failures, {@code false}
+     *                                            to not do anything.
+     */
+    public void setRollbackAfterValidation(boolean rollbackAfterValidation) {
+        this.rollbackAfterValidation = rollbackAfterValidation;
     }
 
     /**

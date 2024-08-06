@@ -194,7 +194,7 @@ abstract class InstanceKeyDataSourceFactory implements ObjectFactory {
         return Long.parseLong(toString(refAddr));
     }
 
-    private void setCommonProperties(final Reference ref, final InstanceKeyDataSource ikds)
+    protected void setCommonProperties(final Reference ref, final InstanceKeyDataSource ikds)
             throws IOException, ClassNotFoundException {
 
         RefAddr refAddr = ref.get("dataSourceName");
